@@ -1,3 +1,5 @@
+// from github.com/rust-lang/vscode-rust
+
 import * as assert from 'assert';
 import * as fs from 'fs';
 import fetch from 'node-fetch';
@@ -9,12 +11,27 @@ const pipeline = util.promisify(stream.pipeline);
 
 const GITHUB_API_ENDPOINT_URL = 'https://api.github.com';
 
-export async function fetchRelease(
+export async function fetchReleaseByLatest(
+  owner: string,
+  repository: string,
+): Promise<GithubRelease> {
+  return fetchRelease(owner, repository, 'latest');
+}
+
+export async function fetchReleaseByTag(
   owner: string,
   repository: string,
   releaseTag: string,
 ): Promise<GithubRelease> {
-  const apiEndpointPath = `/repos/${owner}/${repository}/releases/tags/${releaseTag}`;
+  return fetchRelease(owner, repository, `tags/${releaseTag}`);
+}
+
+async function fetchRelease(
+  owner: string,
+  repository: string,
+  url: string,
+): Promise<GithubRelease> {
+  const apiEndpointPath = `/repos/${owner}/${repository}/releases/${url}`;
 
   const requestUrl = GITHUB_API_ENDPOINT_URL + apiEndpointPath;
 
@@ -30,7 +47,7 @@ export async function fetchRelease(
   if (!response.ok) {
     console.error('Error fetching artifact release info', {
       requestUrl,
-      releaseTag,
+      url,
       response: {
         headers: response.headers,
         status: response.status,
@@ -40,7 +57,7 @@ export async function fetchRelease(
 
     throw new Error(
       `Got response ${response.status} when trying to fetch ` +
-        `release info for ${releaseTag} release`,
+        `release info for ${url} release`,
     );
   }
 
@@ -55,6 +72,10 @@ export interface GithubRelease {
   id: number;
   // eslint-disable-next-line camelcase
   published_at: string;
+  // eslint-disable-next-line camelcase
+  tarball_url: string;
+  // eslint-disable-next-line camelcase
+  zipball_url: string;
   assets: Array<{
     name: string;
     // eslint-disable-next-line camelcase
